@@ -1,0 +1,8 @@
+# Request: Map file path
+string map_file_path
+---
+# Response: Map data as PoseArrays
+geometry_msgs/PoseArray nodes
+geometry_msgs/PoseArray links
+bool success
+string message
