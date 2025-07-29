@@ -36,7 +36,7 @@ private:
                 response->success = true;
                 response->message = "Map loaded successfully";
                 RCLCPP_INFO(this->get_logger(), "Map loaded successfully: %zu nodes, %zu links", 
-                           response->nodes.poses.size(), response->links.poses.size());
+                           response->nodes.poses.size(), response->link_from_node_indices.size());
             } else {
                 response->success = false;
                 response->message = "Failed to load map file";
@@ -65,17 +65,19 @@ private:
             
             // Initialize response arrays
             response->nodes.poses.clear();
-            response->links.poses.clear();
+            response->node_ids.clear();
+            response->link_from_node_indices.clear();
+            response->link_to_node_indices.clear();
             response->nodes.header.frame_id = "map";
-            response->links.header.frame_id = "map";
             response->nodes.header.stamp = this->get_clock()->now();
-            response->links.header.stamp = this->get_clock()->now();
             
-            // Store node positions for link processing
-            std::unordered_map<std::string, geometry_msgs::msg::Pose> node_positions;
+            // Store node positions and IDs for link processing
+            std::unordered_map<std::string, size_t> node_id_to_index;
+            std::vector<std::string> node_id_list;
             
             // Parse Node array from JSON
             if (map_json.contains("Node") && map_json["Node"].is_array()) {
+                size_t node_index = 0;
                 for (const auto& node : map_json["Node"]) {
                     geometry_msgs::msg::Pose pose;
                     
@@ -105,51 +107,42 @@ private:
                             pose.orientation.z = 0.0;
                             pose.orientation.w = 1.0;
                             
+                            // Store node data
                             response->nodes.poses.push_back(pose);
-                            node_positions[node_id] = pose;
+                            response->node_ids.push_back(node_id);
+                            node_id_to_index[node_id] = node_index;
+                            node_id_list.push_back(node_id);
+                            node_index++;
                         }
                     }
                 }
             }
             
-            // Parse Link array from JSON
+            // Parse Link array from JSON to create connectivity information
             if (map_json.contains("Link") && map_json["Link"].is_array()) {
                 for (const auto& link : map_json["Link"]) {
                     if (link.contains("FromNodeID") && link.contains("ToNodeID")) {
                         std::string from_node_id = link["FromNodeID"];
                         std::string to_node_id = link["ToNodeID"];
                         
-                        // Find corresponding nodes
-                        auto from_it = node_positions.find(from_node_id);
-                        auto to_it = node_positions.find(to_node_id);
+                        // Find corresponding node indices
+                        auto from_it = node_id_to_index.find(from_node_id);
+                        auto to_it = node_id_to_index.find(to_node_id);
                         
-                        if (from_it != node_positions.end() && to_it != node_positions.end()) {
-                            geometry_msgs::msg::Pose link_pose;
-                            
-                            // Set link position as midpoint between from and to nodes
-                            link_pose.position.x = (from_it->second.position.x + to_it->second.position.x) / 2.0;
-                            link_pose.position.y = (from_it->second.position.y + to_it->second.position.y) / 2.0;
-                            link_pose.position.z = (from_it->second.position.z + to_it->second.position.z) / 2.0;
-                            
-                            // Calculate orientation from from_node to to_node
-                            double dx = to_it->second.position.x - from_it->second.position.x;
-                            double dy = to_it->second.position.y - from_it->second.position.y;
-                            double yaw = atan2(dy, dx);
-                            
-                            // Convert yaw to quaternion
-                            link_pose.orientation.x = 0.0;
-                            link_pose.orientation.y = 0.0;
-                            link_pose.orientation.z = sin(yaw / 2.0);
-                            link_pose.orientation.w = cos(yaw / 2.0);
-                            
-                            response->links.poses.push_back(link_pose);
+                        if (from_it != node_id_to_index.end() && to_it != node_id_to_index.end()) {
+                            // Store connectivity as indices
+                            response->link_from_node_indices.push_back(static_cast<int32_t>(from_it->second));
+                            response->link_to_node_indices.push_back(static_cast<int32_t>(to_it->second));
+                        } else {
+                            RCLCPP_WARN(this->get_logger(), "Link references unknown nodes: %s -> %s", 
+                                       from_node_id.c_str(), to_node_id.c_str());
                         }
                     }
                 }
             }
             
             RCLCPP_INFO(this->get_logger(), "Parsed %zu nodes and %zu links from JSON", 
-                       response->nodes.poses.size(), response->links.poses.size());
+                       response->nodes.poses.size(), response->link_from_node_indices.size());
             return true;
             
         } catch (const std::exception& e) {

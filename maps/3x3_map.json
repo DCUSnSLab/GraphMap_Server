@@ -14,11 +14,11 @@
             "GpsInfo": {
                 "Lat": 37.5665,
                 "Long": 126.9780,
-                "Alt": 50.0
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482232.78,
-                "Northing": 3974374.96,
+                "Easting": 321424.29,
+                "Northing": 4159640.64,
                 "Zone": "52N"
             }
         },
@@ -36,11 +36,11 @@
             "GpsInfo": {
                 "Lat": 37.5675,
                 "Long": 126.9790,
-                "Alt": 51.0
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482332.78,
-                "Northing": 3974484.96,
+                "Easting": 321512.84,
+                "Northing": 4159752.53,
                 "Zone": "52N"
             }
         },
@@ -58,11 +58,11 @@
             "GpsInfo": {
                 "Lat": 37.5685,
                 "Long": 126.9800,
-                "Alt": 52.0
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482432.78,
-                "Northing": 3974594.96,
+                "Easting": 321601.38,
+                "Northing": 4159864.43,
                 "Zone": "52N"
             }
         },
@@ -80,11 +80,11 @@
             "GpsInfo": {
                 "Lat": 37.5655,
                 "Long": 126.9790,
-                "Alt": 51.5
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482332.78,
-                "Northing": 3974264.96,
+                "Easting": 321514.24,
+                "Northing": 4159530.55,
                 "Zone": "52N"
             }
         },
@@ -102,11 +102,11 @@
             "GpsInfo": {
                 "Lat": 37.5665,
                 "Long": 126.9800,
-                "Alt": 52.5
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482432.78,
-                "Northing": 3974374.96,
+                "Easting": 321602.78,
+                "Northing": 4159642.45,
                 "Zone": "52N"
             }
         },
@@ -124,11 +124,11 @@
             "GpsInfo": {
                 "Lat": 37.5675,
                 "Long": 126.9810,
-                "Alt": 53.0
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482532.78,
-                "Northing": 3974484.96,
+                "Easting": 321691.33,
+                "Northing": 4159754.35,
                 "Zone": "52N"
             }
         },
@@ -146,11 +146,11 @@
             "GpsInfo": {
                 "Lat": 37.5645,
                 "Long": 126.9800,
-                "Alt": 53.0
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482432.78,
-                "Northing": 3974154.96,
+                "Easting": 321604.18,
+                "Northing": 4159420.47,
                 "Zone": "52N"
             }
         },
@@ -168,11 +168,11 @@
             "GpsInfo": {
                 "Lat": 37.5655,
                 "Long": 126.9810,
-                "Alt": 53.5
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482532.78,
-                "Northing": 3974264.96,
+                "Easting": 321692.73,
+                "Northing": 4159532.37,
                 "Zone": "52N"
             }
         },
@@ -190,11 +190,11 @@
             "GpsInfo": {
                 "Lat": 37.5665,
                 "Long": 126.9820,
-                "Alt": 54.0
+                "Alt": 0.0
             },
             "UtmInfo": {
-                "Easting": 482632.78,
-                "Northing": 3974374.96,
+                "Easting": 321781.28,
+                "Northing": 4159644.27,
                 "Zone": "52N"
             }
         }

@@ -1,8 +1,10 @@
 # Request: Map file path
 string map_file_path
 ---
-# Response: Map data as PoseArrays
+# Response: Map data with connectivity information
 geometry_msgs/PoseArray nodes
-geometry_msgs/PoseArray links
+string[] node_ids
+int32[] link_from_node_indices
+int32[] link_to_node_indices
 bool success
 string message

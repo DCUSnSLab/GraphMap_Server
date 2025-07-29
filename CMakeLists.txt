@@ -21,7 +21,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 # Add executables
 add_executable(map_service_node src/map_service_node.cpp)
-add_executable(map_client_node src/map_client_node.cpp)
 
 # Specify libraries to link a library or executable target against
 ament_target_dependencies(map_service_node
@@ -30,11 +29,6 @@ ament_target_dependencies(map_service_node
   geometry_msgs
 )
 
-ament_target_dependencies(map_client_node
-  rclcpp
-  std_msgs
-  geometry_msgs
-)
 
 target_link_libraries(map_service_node
   nlohmann_json::nlohmann_json
@@ -43,12 +37,10 @@ target_link_libraries(map_service_node
 # Link generated interfaces
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(map_service_node "${cpp_typesupport_target}")
-target_link_libraries(map_client_node "${cpp_typesupport_target}")
 
 # Install executables
 install(TARGETS
   map_service_node
-  map_client_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
