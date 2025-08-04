@@ -2,6 +2,12 @@
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <gmserver/srv/load_map.hpp>
+#include <gmserver/msg/graph_map.hpp>
+#include <gmserver/msg/map_data.hpp>
+#include <gmserver/msg/map_node.hpp>
+#include <gmserver/msg/map_link.hpp>
+#include <gmserver/msg/gps_info.hpp>
+#include <gmserver/msg/utm_info.hpp>
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <vector>
@@ -36,7 +42,7 @@ private:
                 response->success = true;
                 response->message = "Map loaded successfully";
                 RCLCPP_INFO(this->get_logger(), "Map loaded successfully: %zu nodes, %zu links", 
-                           response->nodes.poses.size(), response->link_from_node_indices.size());
+                           response->graph_map.map_data.nodes.size(), response->graph_map.map_data.links.size());
             } else {
                 response->success = false;
                 response->message = "Failed to load map file";
@@ -63,86 +69,86 @@ private:
             json map_json;
             file >> map_json;
             
-            // Initialize response arrays
-            response->nodes.poses.clear();
-            response->node_ids.clear();
-            response->link_from_node_indices.clear();
-            response->link_to_node_indices.clear();
-            response->nodes.header.frame_id = "map";
-            response->nodes.header.stamp = this->get_clock()->now();
+            // Initialize GraphMap
+            response->graph_map.map_name = "3x3_map";
+            response->graph_map.map_version = "2021";
+            response->graph_map.creation_date = "20250418";
+            response->graph_map.description = "3x3 Grid Map for ROS2";
             
-            // Store node positions and IDs for link processing
-            std::unordered_map<std::string, size_t> node_id_to_index;
-            std::vector<std::string> node_id_list;
+            // Clear map data arrays
+            response->graph_map.map_data.nodes.clear();
+            response->graph_map.map_data.links.clear();
             
             // Parse Node array from JSON
             if (map_json.contains("Node") && map_json["Node"].is_array()) {
-                size_t node_index = 0;
-                for (const auto& node : map_json["Node"]) {
-                    geometry_msgs::msg::Pose pose;
+                for (const auto& node_json : map_json["Node"]) {
+                    gmserver::msg::MapNode map_node;
                     
-                    if (node.contains("GpsInfo") && node.contains("ID")) {
-                        const auto& gps = node["GpsInfo"];
-                        std::string node_id = node["ID"];
-                        
-                        if (gps.contains("Lat") && gps.contains("Long") && gps.contains("Alt")) {
-                            // Use UTM coordinates if available, otherwise convert GPS
-                            if (node.contains("UtmInfo")) {
-                                const auto& utm = node["UtmInfo"];
-                                if (utm.contains("Easting") && utm.contains("Northing")) {
-                                    pose.position.x = utm["Easting"].get<double>();
-                                    pose.position.y = utm["Northing"].get<double>();
-                                    pose.position.z = gps["Alt"].get<double>();
-                                }
-                            } else {
-                                // Simple GPS to local coordinate conversion
-                                pose.position.x = gps["Long"].get<double>() * 111320.0;
-                                pose.position.y = gps["Lat"].get<double>() * 110540.0;
-                                pose.position.z = gps["Alt"].get<double>();
-                            }
-                            
-                            // Set orientation (no rotation for nodes)
-                            pose.orientation.x = 0.0;
-                            pose.orientation.y = 0.0;
-                            pose.orientation.z = 0.0;
-                            pose.orientation.w = 1.0;
-                            
-                            // Store node data
-                            response->nodes.poses.push_back(pose);
-                            response->node_ids.push_back(node_id);
-                            node_id_to_index[node_id] = node_index;
-                            node_id_list.push_back(node_id);
-                            node_index++;
-                        }
+                    // Basic node information
+                    map_node.id = node_json.value("ID", "");
+                    map_node.admin_code = node_json.value("AdminCode", "");
+                    map_node.node_type = node_json.value("NodeType", 0);
+                    map_node.its_node_id = node_json.value("ITSNodeID", "");
+                    map_node.maker = node_json.value("Maker", "");
+                    map_node.update_date = node_json.value("UpdateDate", "");
+                    map_node.version = node_json.value("Version", "");
+                    map_node.remark = node_json.value("Remark", "");
+                    map_node.hist_type = node_json.value("HistType", "");
+                    map_node.hist_remark = node_json.value("HistRemark", "");
+                    
+                    // GPS Information
+                    if (node_json.contains("GpsInfo")) {
+                        const auto& gps = node_json["GpsInfo"];
+                        map_node.gps_info.lat = gps.value("Lat", 0.0);
+                        map_node.gps_info.longitude = gps.value("Long", 0.0);
+                        map_node.gps_info.alt = gps.value("Alt", 0.0);
                     }
+                    
+                    // UTM Information
+                    if (node_json.contains("UtmInfo")) {
+                        const auto& utm = node_json["UtmInfo"];
+                        map_node.utm_info.easting = utm.value("Easting", 0.0);
+                        map_node.utm_info.northing = utm.value("Northing", 0.0);
+                        map_node.utm_info.zone = utm.value("Zone", "");
+                    }
+                    
+                    response->graph_map.map_data.nodes.push_back(map_node);
                 }
             }
             
-            // Parse Link array from JSON to create connectivity information
+            // Parse Link array from JSON
             if (map_json.contains("Link") && map_json["Link"].is_array()) {
-                for (const auto& link : map_json["Link"]) {
-                    if (link.contains("FromNodeID") && link.contains("ToNodeID")) {
-                        std::string from_node_id = link["FromNodeID"];
-                        std::string to_node_id = link["ToNodeID"];
-                        
-                        // Find corresponding node indices
-                        auto from_it = node_id_to_index.find(from_node_id);
-                        auto to_it = node_id_to_index.find(to_node_id);
-                        
-                        if (from_it != node_id_to_index.end() && to_it != node_id_to_index.end()) {
-                            // Store connectivity as indices
-                            response->link_from_node_indices.push_back(static_cast<int32_t>(from_it->second));
-                            response->link_to_node_indices.push_back(static_cast<int32_t>(to_it->second));
-                        } else {
-                            RCLCPP_WARN(this->get_logger(), "Link references unknown nodes: %s -> %s", 
-                                       from_node_id.c_str(), to_node_id.c_str());
-                        }
-                    }
+                for (const auto& link_json : map_json["Link"]) {
+                    gmserver::msg::MapLink map_link;
+                    
+                    // Basic link information
+                    map_link.id = link_json.value("ID", "");
+                    map_link.admin_code = link_json.value("AdminCode", "");
+                    map_link.road_rank = link_json.value("RoadRank", 0);
+                    map_link.road_type = link_json.value("RoadType", 0);
+                    map_link.road_no = link_json.value("RoadNo", "");
+                    map_link.link_type = link_json.value("LinkType", 0);
+                    map_link.lane_no = link_json.value("LaneNo", 0);
+                    map_link.r_link_id = link_json.value("R_LinkID", "");
+                    map_link.l_link_id = link_json.value("L_LinkID", "");
+                    map_link.from_node_id = link_json.value("FromNodeID", "");
+                    map_link.to_node_id = link_json.value("ToNodeID", "");
+                    map_link.section_id = link_json.value("SectionID", "");
+                    map_link.length = link_json.value("Length", 0.0);
+                    map_link.its_link_id = link_json.value("ITSLinkID", "");
+                    map_link.maker = link_json.value("Maker", "");
+                    map_link.update_date = link_json.value("UpdateDate", "");
+                    map_link.version = link_json.value("Version", "");
+                    map_link.remark = link_json.value("Remark", "");
+                    map_link.hist_type = link_json.value("HistType", "");
+                    map_link.hist_remark = link_json.value("HistRemark", "");
+                    
+                    response->graph_map.map_data.links.push_back(map_link);
                 }
             }
             
             RCLCPP_INFO(this->get_logger(), "Parsed %zu nodes and %zu links from JSON", 
-                       response->nodes.poses.size(), response->link_from_node_indices.size());
+                       response->graph_map.map_data.nodes.size(), response->graph_map.map_data.links.size());
             return true;
             
         } catch (const std::exception& e) {

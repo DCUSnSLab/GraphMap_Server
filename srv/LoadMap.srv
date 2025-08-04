@@ -1,10 +1,7 @@
 # Request: Map file path
 string map_file_path
 ---
-# Response: Map data with connectivity information
-geometry_msgs/PoseArray nodes
-string[] node_ids
-int32[] link_from_node_indices
-int32[] link_to_node_indices
+# Response: Complete map data in GraphMap format
+GraphMap graph_map
 bool success
 string message

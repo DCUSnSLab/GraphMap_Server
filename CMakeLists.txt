@@ -16,7 +16,13 @@ find_package(rosidl_default_generators REQUIRED)
 # Generate interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/LoadMap.srv"
-  DEPENDENCIES geometry_msgs
+  "msg/GpsInfo.msg"
+  "msg/UtmInfo.msg"
+  "msg/MapNode.msg"
+  "msg/MapLink.msg"
+  "msg/MapData.msg"
+  "msg/GraphMap.msg"
+  DEPENDENCIES geometry_msgs std_msgs
 )
 
 # Add executables
